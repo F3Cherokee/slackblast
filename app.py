@@ -214,22 +214,6 @@ async def command(ack, body, respond, client, logger):
     blocks = [
         {
             "type": "input",
-            "block_id": "title",
-            "element": {
-                "type": "plain_text_input",
-                "action_id": "title",
-                "placeholder": {
-                    "type": "plain_text",
-                    "text": "Snarky Title?"
-                }
-            },
-            "label": {
-                "type": "plain_text",
-                "text": "Title"
-            }
-        },
-        {
-            "type": "input",
             "block_id": "the_ao",
             "element": {
                 "type": "channels_select",
@@ -336,45 +320,80 @@ async def command(ack, body, respond, client, logger):
             }
         },
         {
+            "type": "divider"
+        },
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "Backblast"
+            }
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "Optionally share a backblast that tells about what happened in the beatdown."
+            }
+        },
+        {
+            "type": "input",
+            "block_id": "title",
+            "element": {
+                "type": "plain_text_input",
+                "action_id": "title",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Snarky Title?"
+                }
+            },
+            "label": {
+                "type": "plain_text",
+                "text": "Title"
+            },
+            "optional": True,
+        },
+        {
             "type": "input",
             "block_id": "moleskine",
             "element": {
                 "type": "plain_text_input",
                 "multiline": True,
                 "action_id": "plain_text_input-action",
-                "initial_value": "WARMUP: \nTHE THANG: \nMARY: \nANNOUNCEMENTS: \nCOT: ",
+                "initial_value": "",
                 "placeholder": {
                     "type": "plain_text",
-                    "text": "Tell us what happened\n\n"
+                    "text": "WARMUP: \nTHE THANG: \nMARY: \nANNOUNCEMENTS: \nCOT:"
                 }
             },
             "label": {
                 "type": "plain_text",
                 "text": "The Moleskine",
                 "emoji": True
-            }
-        },
-        {
-            "type": "divider"
-        },
-        {
-            "type": "section",
-            "block_id": "destination",
-            "text": {
-                "type": "plain_text",
-                "text": "Choose where to post this"
             },
-            "accessory": {
-                "action_id": "destination-action",
-                "type": "static_select",
-                "placeholder": {
-                    "type": "plain_text",
-                    "text": "Choose where"
-                },
-                "initial_option": initial_channel_option,
-                "options": channel_options
-            }
+            "optional": True
         }
+        # {
+        #     "type": "divider"
+        # },
+        # {
+        #     "type": "section",
+        #     "block_id": "destination",
+        #     "text": {
+        #         "type": "plain_text",
+        #         "text": "Choose where to post this"
+        #     },
+        #     "accessory": {
+        #         "action_id": "destination-action",
+        #         "type": "static_select",
+        #         "placeholder": {
+        #             "type": "plain_text",
+        #             "text": "Choose where"
+        #         },
+        #         "initial_option": initial_channel_option,
+        #         "options": channel_options
+        #     }
+        # }
     ]
 
     if config('EMAIL_TO', default='') and not config('EMAIL_OPTION_HIDDEN_IN_MODAL', default=False, cast=bool):
@@ -403,7 +422,7 @@ async def command(ack, body, respond, client, logger):
             "callback_id": "backblast-id",
             "title": {
                 "type": "plain_text",
-                "text": "Create a Backblast"
+                "text": "Submit Beatdown Count"
             },
             "submit": {
                 "type": "plain_text",
@@ -435,9 +454,14 @@ async def view_submission(ack, body, logger, client):
 
     logger.info(result)
 
-    chan = destination
-    if chan == 'THE_AO':
-        chan = the_ao
+    # TODO: Automatically calculate count from pax, q, and fngs
+    # count = len(pax)
+    # if the_q not in pax, count++
+    # if fngs != 'None', count += len(fngs.split(','))
+
+    # chan = destination
+    # if chan == 'THE_AO':
+    chan = the_ao
 
     logger.info('Channel to post to will be {} because the selected destination value was {} while the selected AO in the modal was {}'.format(
         chan, destination, the_ao))
