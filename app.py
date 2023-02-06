@@ -254,17 +254,17 @@ async def command(ack, body, respond, client, logger):
             "type": "input",
             "block_id": "the_q",
             "element": {
-                "type": "users_select",
+                "type": "multi_users_select",
                 "placeholder": {
                     "type": "plain_text",
-                    "text": "Tag the Q",
+                    "text": "Tag the Q (or Qs)",
                     "emoji": True
                 },
-                "action_id": "users_select-action"
+                "action_id": "multi_users_select-action"
             },
             "label": {
                 "type": "plain_text",
-                "text": "The Q",
+                "text": "The Q(s)",
                 "emoji": True
             }
         },
@@ -275,15 +275,36 @@ async def command(ack, body, respond, client, logger):
                 "type": "multi_users_select",
                 "placeholder": {
                     "type": "plain_text",
-                    "text": "Tag the PAX",
+                    "text": "Tag the PAX who are in slack",
                     "emoji": True
                 },
                 "action_id": "multi_users_select-action"
             },
             "label": {
                 "type": "plain_text",
-                "text": "The PAX",
+                "text": "The PAX (In Slack)",
                 "emoji": True
+            }
+        },
+        {
+            "type": "input",
+            "block_id": "other_pax",
+            "element": {
+                "type": "plain_text_input",
+                "action_id": "others-action",
+                "initial_value": "None",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Names of PAX not in Slack"
+                }
+            },
+            "label": {
+                "type": "plain_text",
+                "text": "The PAX (Not in Slack)"
+            },
+            "hint": {
+                "type": "plain_text",
+                "text": "List untaggable names separated by commas, exluding FNGs",
             }
         },
         {
@@ -295,30 +316,34 @@ async def command(ack, body, respond, client, logger):
                 "initial_value": "None",
                 "placeholder": {
                     "type": "plain_text",
-                    "text": "FNGs"
+                    "text": "Names of FNGs"
                 }
             },
             "label": {
                 "type": "plain_text",
-                "text": "List untaggable names separated by commas (FNGs, Willy Lomans, etc.)"
-            }
-        },
-        {
-            "type": "input",
-            "block_id": "count",
-            "element": {
-                "type": "plain_text_input",
-                "action_id": "count-action",
-                "placeholder": {
-                    "type": "plain_text",
-                    "text": "Total PAX count including FNGs"
-                }
+                "text": "FNGs"
             },
-            "label": {
+            "hint": {
                 "type": "plain_text",
-                "text": "Count"
+                "text": "List FNGs separated by commas",
             }
         },
+        # {
+        #     "type": "input",
+        #     "block_id": "count",
+        #     "element": {
+        #         "type": "plain_text_input",
+        #         "action_id": "count-action",
+        #         "placeholder": {
+        #             "type": "plain_text",
+        #             "text": "Total PAX count including FNGs"
+        #         }
+        #     },
+        #     "label": {
+        #         "type": "plain_text",
+        #         "text": "Count"
+        #     }
+        # },
         {
             "type": "divider"
         },
@@ -439,51 +464,83 @@ async def view_submission(ack, body, logger, client):
     await ack()
     result = body["view"]["state"]["values"]
     title = result["title"]["title"]["value"]
-    date = result["date"]["datepicker-action"]["selected_date"]
     the_ao = result["the_ao"]["channels_select-action"]["selected_channel"]
-    the_q = result["the_q"]["users_select-action"]["selected_user"]
+    the_q = result["the_q"]["multi_users_select-action"]["selected_users"]
     pax = result["the_pax"]["multi_users_select-action"]["selected_users"]
+    other_pax = result["other_pax"]["others-action"]["value"]
     fngs = result["fngs"]["fng-action"]["value"]
-    count = result["count"]["count-action"]["value"]
+    # count = result["count"]["count-action"]["value"]
     moleskine = result["moleskine"]["plain_text_input-action"]["value"]
-    destination = result["destination"]["destination-action"]["selected_option"]["value"]
+    # destination = result["destination"]["destination-action"]["selected_option"]["value"]
     email_to = safeget(result, "email", "email-action", "value")
     the_date = result["date"]["datepicker-action"]["selected_date"]
 
+    for q in the_q:
+        if q in pax:
+            pax.remove(q)
+
     pax_formatted = await get_pax(pax)
+    q_formatted = await get_pax(the_q)
 
-    logger.info(result)
-
-    # TODO: Automatically calculate count from pax, q, and fngs
-    # count = len(pax)
-    # if the_q not in pax, count++
-    # if fngs != 'None', count += len(fngs.split(','))
+    # logger.info(result)
 
     # chan = destination
     # if chan == 'THE_AO':
     chan = the_ao
 
-    logger.info('Channel to post to will be {} because the selected destination value was {} while the selected AO in the modal was {}'.format(
-        chan, destination, the_ao))
+    # Calculate count from pax, q, and fngs
+    count = len(pax)
+    count = count + len(the_q)
 
     ao_name = await get_channel_name(the_ao, logger, client)
-    q_name = (await get_user_names([the_q], logger, client) or [''])[0]
+    q_names = ', '.join(await get_user_names(the_q, logger, client) or [''])
     pax_names = ', '.join(await get_user_names(pax, logger, client) or [''])
+
+    # Clean up the fng list and format as expected by the miner.
+    fng_list = []
+    fng_string = "0"
+    if fngs != "None":
+        fng_list = fngs.split(',')
+        fng_list = [s.strip() for s in fng_list]
+        while("" in fng_list) :
+            fng_list.remove("")
+        fng_string = str(len(fng_list)) + " " + ", ".join(fng_list)
+
+        count = count + len(fng_list)
+
+    pax_string = pax_formatted
+    if other_pax.strip() != "None":
+        other_pax_list = []
+        other_pax_list = other_pax.split(',')
+        other_pax_list = [s.strip() for s in other_pax_list]
+        while("" in other_pax_list) :
+            other_pax_list.remove("")
+        other_pax = ", ".join(other_pax_list)
+
+        pax_string = pax_formatted + ", " + other_pax
+        pax_names = pax_names + ", " + other_pax
+
+        count = count + len(other_pax_list)
 
     msg = ""
     try:
         # formatting a message
         # todo: change to use json object
-        header_msg = f"*Slackblast*: "
-        title_msg = f"*" + title + "*"
+        header_msg = f"*Backblast*:"
+
+        title_msg = f"{str(count)} posted at <#{the_ao}>"
+        if title is not None:
+            title_msg = title
 
         date_msg = f"*DATE*: " + the_date
         ao_msg = f"*AO*: <#" + the_ao + ">"
-        q_msg = f"*Q*: <@" + the_q + ">"
-        pax_msg = f"*PAX*: " + pax_formatted
-        fngs_msg = f"*FNGs*: " + fngs
-        count_msg = f"*COUNT*: " + count
-        moleskine_msg = moleskine
+        q_msg = f"*Q*: " + str(q_formatted)
+        pax_msg = f"*PAX*: " + pax_string
+        fngs_msg = f"*FNGs*: " + fng_string
+        count_msg = f"*COUNT*: " + str(count)
+        moleskine_msg = f""
+        if moleskine is not None:
+            moleskine_msg = moleskine
 
         # Message the user via the app/bot name
         if config('POST_TO_CHANNEL', cast=bool):
@@ -499,15 +556,19 @@ async def view_submission(ack, body, logger, client):
         await client.chat_postMessage(channel=chan, text='There was an error with your submission: {}'.format(slack_bolt_err))
     try:
         if email_to and email_to != OPTIONAL_INPUT_VALUE:
-            subject = title
+            subject = f"" + str(count) + " posted at " + ao_name
+            if title != "":
+                subject = title
 
             date_msg = f"DATE: " + the_date
             ao_msg = f"AO: " + (ao_name or '').replace('the', '').title()
-            q_msg = f"Q: " + q_name
-            pax_msg = f"PAX: " + pax_names
-            fngs_msg = f"FNGs: " + fngs
+            q_msg = f"Q: " + q_names
+            pax_msg = f"PAX: " + pax_string
+            fngs_msg = f"FNGs: " + fng_string
             count_msg = f"COUNT: " + count
-            moleskine_msg = moleskine
+            moleskine_msg = ""
+            if moleskine != "":
+                moleskine_msg = moleskine
 
             body_email = make_body(
                 date_msg, ao_msg, q_msg, pax_msg, fngs_msg, count_msg, moleskine_msg)
@@ -547,7 +608,7 @@ async def get_pax(pax):
     p = ""
     for x in pax:
         p += "<@" + x + "> "
-    return p
+    return p.strip()
 
 
 app = FastAPI()
