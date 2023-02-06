@@ -10,6 +10,13 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  SLACK_BOT_TOKEN: $(SLACK_BOT_TOKEN)
+  SLACK_VERIFICATION_TOKEN: $(SLACK_VERIFICATION_TOKEN)
+  SLACK_SIGNING_SECRET: $(SLACK_SIGNING_SECRET)
+  POST_TO_CHANNEL: True
+  CHANNEL: THE_AO
+
 jobs:
   build:
     runs-on: ubuntu-latest
