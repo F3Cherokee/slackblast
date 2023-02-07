@@ -31,7 +31,6 @@ import sendmail
 
 OPTIONAL_INPUT_VALUE = "None"
 
-
 logging.basicConfig(level=logging.DEBUG)
 #categories = []
 
