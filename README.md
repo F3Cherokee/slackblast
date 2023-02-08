@@ -71,6 +71,7 @@ app_mentions:read
 channels:read
 chat:write
 chat:write.public
+chat:write.customize
 commands
 im:write
 users:read
@@ -97,6 +98,10 @@ See .env-f3nation-community file for help on local development.
 # Deployment
 
 Go to Azure App Services > Deployment Center and set up an integration with your Github repo where you forked this repo and have the Slackblast code. Azure will create a main\_<your-azure-appname>.yml file under .github/workflows folder, but it should be hidden by default and you should not need to worry about it. Whenever you make any change to your `main` branch, it will deploy the most recent code.
+
+Set the python version to 3.10 and set the startup command in the Configuration -> General Settings to:
+
+`python -m uvicorn app:app --host 0.0.0.0`
 
 Here is further reading if you want to know what is going on under the hood.
 

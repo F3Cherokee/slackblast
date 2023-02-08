@@ -31,7 +31,7 @@ import sendmail
 
 OPTIONAL_INPUT_VALUE = "None"
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 #categories = []
 
 slack_app = AsyncApp(
@@ -97,8 +97,9 @@ async def get_channel_name(id, logger, client):
     return channel_name
 
 
-async def get_user_names(array_of_user_ids, logger, client):
+async def get_user_names(array_of_user_ids, logger, client, return_urls = False):
     names = []
+    urls = []
     for user_id in array_of_user_ids:
         user_info_dict = await client.users_info(
             user=user_id
@@ -107,9 +108,16 @@ async def get_user_names(array_of_user_ids, logger, client):
             user_info_dict, 'user', 'profile', 'real_name') or None
         if user_name:
             names.append(user_name)
-        logger.info('user_name is {}'.format(user_name))
-    logger.info('names are {}'.format(names))
-    return names
+        logger.debug('user_name is {}'.format(user_name))
+
+        user_icon_url = user_info_dict['user']['profile']['image_192']
+        urls.append(user_icon_url)
+    logger.debug('names are {}'.format(names))
+
+    if return_urls:
+        return names, urls
+    else:
+        return names
 
 
 @slack_app.command("/slackblast")
@@ -462,6 +470,8 @@ async def command(ack, body, respond, client, logger):
 async def view_submission(ack, body, logger, client):
     await ack()
     result = body["view"]["state"]["values"]
+    user = body["user"]
+
     title = result["title"]["title"]["value"]
     the_ao = result["the_ao"]["channels_select-action"]["selected_channel"]
     the_q = result["the_q"]["multi_users_select-action"]["selected_users"]
@@ -473,6 +483,11 @@ async def view_submission(ack, body, logger, client):
     # destination = result["destination"]["destination-action"]["selected_option"]["value"]
     email_to = safeget(result, "email", "email-action", "value")
     the_date = result["date"]["datepicker-action"]["selected_date"]
+
+    user_id = user["id"]
+    user_name, user_url = (await get_user_names([user_id], logger, client, return_urls=True))
+    user_name = (user_name or [''])[0]
+    user_url = user_url[0]
 
     for q in the_q:
         if q in pax:
@@ -546,7 +561,7 @@ async def view_submission(ack, body, logger, client):
             body = make_body(date_msg, ao_msg, q_msg, pax_msg,
                              fngs_msg, count_msg, moleskine_msg)
             msg = header_msg + "\n" + title_msg + "\n" + body
-            await client.chat_postMessage(channel=chan, text=msg)
+            await client.chat_postMessage(channel=chan, text=msg, username=f'{user_name} (via Slackblast)', icon_url=user_url)
             logger.info('\nMessage posted to Slack! \n{}'.format(msg))
     except Exception as slack_bolt_err:
         logger.error('Error with posting Slack message with chat_postMessage: {}'.format(
