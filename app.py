@@ -30,6 +30,7 @@ import sendmail
 #     return opts
 
 OPTIONAL_INPUT_VALUE = "None"
+BACKBLAST_DEFAULT_TEXT = "WARMUP: \nTHE THANG: \nMARY: \nANNOUNCEMENTS: \nCOT:"
 
 logging.basicConfig(level=logging.INFO)
 #categories = []
@@ -392,11 +393,7 @@ async def command(ack, body, respond, client, logger):
                 "type": "plain_text_input",
                 "multiline": True,
                 "action_id": "plain_text_input-action",
-                "initial_value": "",
-                "placeholder": {
-                    "type": "plain_text",
-                    "text": "WARMUP: \nTHE THANG: \nMARY: \nANNOUNCEMENTS: \nCOT:"
-                }
+                "initial_value": BACKBLAST_DEFAULT_TEXT
             },
             "label": {
                 "type": "plain_text",
@@ -553,7 +550,7 @@ async def view_submission(ack, body, logger, client):
         fngs_msg = f"*FNGs*: " + fng_string
         count_msg = f"*COUNT*: " + str(count)
         moleskine_msg = f""
-        if moleskine is not None:
+        if moleskine is not None and moleskine != BACKBLAST_DEFAULT_TEXT:
             moleskine_msg = moleskine
 
         # Message the user via the app/bot name
