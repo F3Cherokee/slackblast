@@ -5,3 +5,7 @@ fastapi<1
 uvicorn<1
 uvloop
 httptools
+requests
+pytz
+oauthlib
+requests_oauthlib

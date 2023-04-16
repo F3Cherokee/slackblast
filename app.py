@@ -3,6 +3,7 @@ from decouple import config, UndefinedValueError
 from fastapi import FastAPI, Request
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from slack_bolt.async_app import AsyncApp
+import wordpress
 import datetime
 from datetime import datetime, timezone, timedelta
 import json
@@ -591,6 +592,21 @@ async def view_submission(ack, body, logger, client):
             email_not_configured_error))
     except Exception as sendmail_err:
         logger.error('Error with sendmail: {}'.format(sendmail_err))
+
+    try:
+        if config("WORDPRESS_BASE_URL", OPTIONAL_INPUT_VALUE) != OPTIONAL_INPUT_VALUE and moleskine != BACKBLAST_DEFAULT_TEXT:
+            result = wordpress.postToWordpress(
+                title=title, 
+                date=the_date, 
+                qic=q_names, 
+                ao=ao_name, 
+                pax=pax_names, 
+                fngs=fng_list, 
+                backblast=moleskine
+            )
+            logger.info("Post to Wordpress result: {}".format(json.dumps(result, indent=2)))
+    except Exception as wordpress_err:
+         logger.error("Error with wordpress: {}".format(wordpress_err))
 
 
 def make_body(date, ao, q, pax, fngs, count, moleskine):
