@@ -64,6 +64,7 @@ def normalizeAO(dirty_data):
 def normalizeChoice(dirty_data):
     dirty_data = dirty_data.replace("the", '')
     dirty_data = dirty_data.replace("-", '')
+    dirty_data = dirty_data.replace("_", '')
     dirty_data = dirty_data.replace(" ", '')
     return dirty_data.strip().lower()
 
