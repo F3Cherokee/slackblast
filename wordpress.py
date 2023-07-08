@@ -66,6 +66,7 @@ def normalizeChoice(dirty_data):
     dirty_data = dirty_data.replace("-", '')
     dirty_data = dirty_data.replace("_", '')
     dirty_data = dirty_data.replace(" ", '')
+    dirty_data = dirty_data.replace(".", '')
     return dirty_data.strip().lower()
 
 # Post the data to wordpress.  
