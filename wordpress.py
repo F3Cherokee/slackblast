@@ -62,12 +62,13 @@ def normalizeAO(dirty_data):
     return dirty_data
 
 def normalizeChoice(dirty_data):
+    dirty_data = dirty_data.lower()
     dirty_data = dirty_data.replace("the", '')
     dirty_data = dirty_data.replace("-", '')
     dirty_data = dirty_data.replace("_", '')
     dirty_data = dirty_data.replace(" ", '')
     dirty_data = dirty_data.replace(".", '')
-    return dirty_data.strip().lower()
+    return dirty_data.strip()
 
 # Post the data to wordpress.  
 #  date: str in 'MM/DD/YYYY' format
