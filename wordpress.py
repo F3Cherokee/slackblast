@@ -58,6 +58,10 @@ def getChoiceValueForText(choices, choice_text):
 def normalizeAO(dirty_data):
     dirty_data = dirty_data.replace("ao-", '')
     dirty_data = dirty_data.replace("bd-", '')
+    dirty_data = dirty_data.replace("lk-", '')
+    dirty_data = dirty_data.replace("ws-", '')
+    dirty_data = dirty_data.replace("tri-", '')
+    dirty_data = dirty_data.replace("mc-", '')
     dirty_data = dirty_data.replace("-", ' ')
     return dirty_data
 
